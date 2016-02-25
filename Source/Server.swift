@@ -54,6 +54,7 @@ public struct Server: ServerType {
 
 extension Server {
     public func start(failure: ErrorType -> Void = Server.printError) throws {
+        printHeader()
         while true {
             let stream = try server.accept()
             co {
