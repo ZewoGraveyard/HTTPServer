@@ -31,6 +31,7 @@ public struct Server: ServerType {
     public let middleware: [MiddlewareType]
     public let responder: ResponderType
     public let serializer: ResponseSerializerType
+    public let port: Int
 
     public init(address: String? = nil, port: Int = 8080, reusePort: Bool = false, parser: RequestParserType = RequestParser(), middleware: MiddlewareType..., responder: ResponderType, serializer: ResponseSerializerType = ResponseSerializer()) throws {
         self.server = try TCPStreamServer(address: address, port: port, reusePort: reusePort)
@@ -38,6 +39,7 @@ public struct Server: ServerType {
         self.middleware = middleware
         self.responder = responder
         self.serializer = serializer
+        self.port = port
     }
 
     public init(address: String? = nil, port: Int = 8080, reusePort: Bool = false, parser: RequestParserType = RequestParser(), middleware: MiddlewareType..., serializer: ResponseSerializerType = ResponseSerializer(), respond: Respond) throws {
@@ -46,6 +48,7 @@ public struct Server: ServerType {
         self.middleware = middleware
         self.responder = Responder(respond: respond)
         self.serializer = serializer
+        self.port = port
     }
 }
 
@@ -114,6 +117,21 @@ extension Server {
 
     private static func printError(error: ErrorType) -> Void {
         print("Error: \(error)")
+    }
+
+    private func printHeader() {
+        print("")
+        print("")
+        print("")
+        print("                             _____")
+        print("     ,.-``-._.-``-.,        /__  /  ___ _      ______")
+        print("    |`-._,.-`-.,_.-`|         / /  / _ \\ | /| / / __ \\")
+        print("    |   |ˆ-. .-`|   |        / /__/  __/ |/ |/ / /_/ /")
+        print("    `-.,|   |   |,.-`       /____/\\___/|__/|__/\\____/ (c)")
+        print("        `-.,|,.-`           -----------------------------")
+        print("")
+        print("================================================================================")
+        print("Started HTTPServer, listening on port \(port).")
     }
 }
 
