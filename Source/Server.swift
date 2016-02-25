@@ -132,7 +132,7 @@ extension Server {
         print("        `-.,|,.-`           -----------------------------")
         print("")
         print("================================================================================")
-        print("Started HTTPServer, listening on port \(port).")
+        print("Started HTTP server, listening on port \(port).")
     }
 }
 
