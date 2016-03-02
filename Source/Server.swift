@@ -42,13 +42,21 @@ public struct Server: ServerType {
         self.port = port
     }
 
+    public init(_ responder: ResponderType) throws {
+        try self.init(responder: responder)
+    }
+
     public init(address: String? = nil, port: Int = 8080, reusePort: Bool = false, parser: RequestParserType = RequestParser(), middleware: MiddlewareType..., serializer: ResponseSerializerType = ResponseSerializer(), respond: Respond) throws {
         self.server = try TCPStreamServer(address: address, port: port, reusePort: reusePort)
         self.parser = parser
         self.middleware = middleware
-        self.responder = Responder(respond: respond)
+        self.responder = Responder(respond)
         self.serializer = serializer
         self.port = port
+    }
+
+    public init(_ respond: Respond) throws {
+        try self.init(respond: respond)
     }
 }
 
