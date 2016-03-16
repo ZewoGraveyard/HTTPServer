@@ -61,7 +61,7 @@ public struct Server: ServerType {
 }
 
 extension Server {
-    public func start(failure: ErrorType -> Void = Server.printError) throws {
+    public func start(failure: ErrorProtocol -> Void = Server.printError) throws {
         printHeader()
         while true {
             let stream = try server.accept()
@@ -114,7 +114,7 @@ extension Server {
         try stream.flush()
     }
 
-    public func startInBackground(failure: ErrorType -> Void = Server.printError) {
+    public func startInBackground(failure: ErrorProtocol -> Void = Server.printError) {
         co {
             do {
                 try self.start()
@@ -124,7 +124,7 @@ extension Server {
         }
     }
 
-    private static func printError(error: ErrorType) -> Void {
+    private static func printError(error: ErrorProtocol) -> Void {
         print("Error: \(error)")
     }
 
