@@ -23,17 +23,18 @@
 // SOFTWARE.
 
 @_exported import TCP
-@_exported import HTTP
+@_exported import HTTPParser
+@_exported import HTTPSerializer
 
-public struct Server: ServerType {
-    public let server: StreamServerType
-    public let parser: RequestParserType
-    public let middleware: [MiddlewareType]
-    public let responder: ResponderType
-    public let serializer: ResponseSerializerType
+public struct Server {
+    public let server: C7.StreamServer
+    public let parser: S4.RequestParser
+    public let middleware: [S4.Middleware]
+    public let responder: S4.Responder
+    public let serializer: S4.ResponseSerializer
     public let port: Int
 
-    public init(address: String? = nil, port: Int = 8080, reusePort: Bool = false, parser: RequestParserType = RequestParser(), middleware: MiddlewareType..., responder: ResponderType, serializer: ResponseSerializerType = ResponseSerializer()) throws {
+    public init(address: String? = nil, port: Int = 8080, reusePort: Bool = false, parser: S4.RequestParser = RequestParser(), middleware: Middleware..., responder: Responder, serializer: S4.ResponseSerializer = ResponseSerializer()) throws {
         self.server = try TCPStreamServer(address: address, port: port, reusePort: reusePort)
         self.parser = parser
         self.middleware = middleware
@@ -42,21 +43,17 @@ public struct Server: ServerType {
         self.port = port
     }
 
-    public init(_ responder: ResponderType) throws {
+    public init(_ responder: Responder) throws {
         try self.init(responder: responder)
     }
 
-    public init(address: String? = nil, port: Int = 8080, reusePort: Bool = false, parser: RequestParserType = RequestParser(), middleware: MiddlewareType..., serializer: ResponseSerializerType = ResponseSerializer(), respond: Respond) throws {
+    public init(address: String? = nil, port: Int = 8080, reusePort: Bool = false, parser: S4.RequestParser = RequestParser(), middleware: Middleware..., serializer: S4.ResponseSerializer = ResponseSerializer(), _ respond: Respond) throws {
         self.server = try TCPStreamServer(address: address, port: port, reusePort: reusePort)
         self.parser = parser
         self.middleware = middleware
-        self.responder = Responder(respond)
+        self.responder = BasicResponder(respond)
         self.serializer = serializer
         self.port = port
-    }
-
-    public init(_ respond: Respond) throws {
-        try self.init(respond: respond)
     }
 }
 
@@ -75,14 +72,11 @@ extension Server {
         }
     }
 
-    private func processStream(stream: StreamType) throws {
+    private func processStream(stream: Stream) throws {
         while !stream.closed {
             do {
                 let data = try stream.receive()
                 if let request = try parser.parse(data) {
-                    var request = request
-                    request.ip = stream.ip
-
                     let response = try middleware.intercept(responder).respond(request)
                     try serialize(response, stream: stream)
 
@@ -96,17 +90,22 @@ extension Server {
                         break
                     }
                 }
-            } catch StreamError.ClosedStream {
+            } catch StreamError.closedStream {
                 break
             } catch {
-                let response = Response(status: .InternalServerError)
+                let response = Response(
+                    version: Version(major: 1, minor: 1),
+                    status: .internalServerError,
+                    headers: Headers([:]),
+                    body: Drain([])
+                )
                 try serialize(response, stream: stream)
                 throw error
             }
         }
     }
 
-    private func serialize(response: Response, stream: StreamType) throws {
+    private func serialize(response: Response, stream: Stream) throws {
         try serializer.serialize(response) { data in
             try stream.send(data)
         }
@@ -145,13 +144,37 @@ extension Server {
 }
 
 extension Request {
-    public var ip: IP? {
+    var connection: HeaderValues {
         get {
-            return storage["ip"] as? IP
+            return headers.headers["connection"] ?? HeaderValues([])
         }
 
-        set {
-            storage["ip"] = newValue
+        set(connection) {
+            headers.headers["connection"] = connection
+        }
+    }
+
+    var isKeepAlive: Bool {
+        if version.minor == 0 {
+            return connection.values.contains({$0.lowercased().contains("keep-alive")})
+        }
+
+        return connection.values.contains({!$0.lowercased().contains("close")})
+    }
+}
+
+extension Response {
+    typealias Upgrade = (Request, Stream) throws -> Void
+
+    // Warning: The storage key has to be in sync with Zewo.HTTP's upgrade property.
+    var upgrade: Upgrade? {
+        get {
+            return storage["response-connection-upgrade"] as? Upgrade
+        }
+
+        set(upgrade) {
+            storage["response-connection-upgrade"] = upgrade
         }
     }
 }
+
