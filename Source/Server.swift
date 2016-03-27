@@ -93,12 +93,7 @@ extension Server {
             } catch StreamError.closedStream {
                 break
             } catch {
-                let response = Response(
-                    version: Version(major: 1, minor: 1),
-                    status: .internalServerError,
-                    headers: Headers([:]),
-                    body: Drain([])
-                )
+                let response = Response(status: .internalServerError)
                 try serialize(response, stream: stream)
                 throw error
             }
