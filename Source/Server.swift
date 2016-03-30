@@ -76,26 +76,30 @@ extension Server {
         while !stream.closed {
             do {
                 let data = try stream.receive()
-                if let request = try parser.parse(data) {
-                    let response = try middleware.intercept(responder).respond(request)
-                    try serialize(response, stream: stream)
-
-                    if let upgrade = response.upgrade {
-                        try upgrade(request, stream)
-                        stream.close()
-                    }
-
-                    if !request.isKeepAlive {
-                        stream.close()
-                        break
-                    }
-                }
+                try processData(data, stream: stream)
             } catch StreamError.closedStream {
                 break
             } catch {
                 let response = Response(status: .internalServerError)
                 try serialize(response, stream: stream)
                 throw error
+            }
+        }
+    }
+
+    private func processData(data: Data, stream: Stream) throws {
+        if let request = try parser.parse(data) {
+            let response = try middleware.intercept(responder).respond(request)
+            try serialize(response, stream: stream)
+
+            if let upgrade = response.upgrade {
+                try upgrade(request, stream)
+                stream.close()
+            }
+
+            if !request.isKeepAlive {
+                stream.close()
+                throw StreamError.closedStream(data: nil)
             }
         }
     }
@@ -123,18 +127,19 @@ extension Server {
     }
 
     private func printHeader() {
-        print("")
-        print("")
-        print("")
-        print("                             _____")
-        print("     ,.-``-._.-``-.,        /__  /  ___ _      ______")
-        print("    |`-._,.-`-.,_.-`|         / /  / _ \\ | /| / / __ \\")
-        print("    |   |ˆ-. .-`|   |        / /__/  __/ |/ |/ / /_/ /")
-        print("    `-.,|   |   |,.-`       /____/\\___/|__/|__/\\____/ (c)")
-        print("        `-.,|,.-`           -----------------------------")
-        print("")
-        print("================================================================================")
-        print("Started HTTP server, listening on port \(port).")
+        var header = "\n"
+        header += "\n"
+        header += "\n"
+        header += "                             _____\n"
+        header += "     ,.-``-._.-``-.,        /__  /  ___ _      ______\n"
+        header += "    |`-._,.-`-.,_.-`|         / /  / _ \\ | /| / / __ \\\n"
+        header += "    |   |ˆ-. .-`|   |        / /__/  __/ |/ |/ / /_/ /\n"
+        header += "    `-.,|   |   |,.-`       /____/\\___/|__/|__/\\____/ (c)\n"
+        header += "        `-.,|,.-`           -----------------------------\n"
+        header += "\n"
+        header += "================================================================================\n"
+        header += "Started HTTP server, listening on port \(port)."
+        print(header)
     }
 }
 
