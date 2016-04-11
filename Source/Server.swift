@@ -27,7 +27,7 @@
 @_exported import HTTPSerializer
 
 public struct Server {
-    public let server: C7.StreamServer
+    public let server: C7.Host
     public let parser: S4.RequestParser
     public let middleware: [S4.Middleware]
     public let responder: S4.Responder
@@ -35,7 +35,7 @@ public struct Server {
     public let port: Int
 
     public init(address: String? = nil, port: Int = 8080, reusePort: Bool = false, parser: S4.RequestParser = RequestParser(), middleware: Middleware..., responder: Responder, serializer: S4.ResponseSerializer = ResponseSerializer()) throws {
-        self.server = try TCPStreamServer(address: address, port: port, reusePort: reusePort)
+        self.server = try TCPServer(for: URI(host: address ?? "0.0.0.0", port: port), reusingPort: reusePort)
         self.parser = parser
         self.middleware = middleware
         self.responder = responder
@@ -48,7 +48,7 @@ public struct Server {
     }
 
     public init(address: String? = nil, port: Int = 8080, reusePort: Bool = false, parser: S4.RequestParser = RequestParser(), middleware: Middleware..., serializer: S4.ResponseSerializer = ResponseSerializer(), _ respond: Respond) throws {
-        self.server = try TCPStreamServer(address: address, port: port, reusePort: reusePort)
+        self.server = try TCPServer(for: URI(host: address ?? "0.0.0.0", port: port), reusingPort: reusePort)
         self.parser = parser
         self.middleware = middleware
         self.responder = BasicResponder(respond)
@@ -61,7 +61,7 @@ extension Server {
     public func start(failure: ErrorProtocol -> Void = Server.printError) throws {
         printHeader()
         while true {
-            let stream = try server.accept()
+            let stream = try server.accept(timingOut: .never)
             co {
                 do {
                     try self.processStream(stream)
@@ -75,13 +75,13 @@ extension Server {
     private func processStream(stream: Stream) throws {
         while !stream.closed {
             do {
-                let data = try stream.receive()
+                let data = try stream.receive(upTo: 2048)
                 try processData(data, stream: stream)
             } catch StreamError.closedStream {
                 break
             } catch {
                 let response = Response(status: .internalServerError)
-                try serialize(response, stream: stream)
+                try serializer.serialize(response, to: stream)
                 throw error
             }
         }
@@ -89,8 +89,8 @@ extension Server {
 
     private func processData(data: Data, stream: Stream) throws {
         if let request = try parser.parse(data) {
-            let response = try middleware.intercept(responder).respond(request)
-            try serialize(response, stream: stream)
+            let response = try middleware.chain(to: responder).respond(to: request)
+            try serializer.serialize(response, to: stream)
 
             if let upgrade = response.upgrade {
                 try upgrade(request, stream)
@@ -99,17 +99,9 @@ extension Server {
 
             if !request.isKeepAlive {
                 stream.close()
-                throw StreamError.closedStream(data: nil)
+                throw StreamError.closedStream(data: [])
             }
         }
-    }
-
-    private func serialize(response: Response, stream: Stream) throws {
-        try serializer.serialize(response) { data in
-            try stream.send(data)
-        }
-
-        try stream.flush()
     }
 
     public func startInBackground(failure: ErrorProtocol -> Void = Server.printError) {
@@ -144,9 +136,9 @@ extension Server {
 }
 
 extension Request {
-    var connection: HeaderValues {
+    var connection: Header {
         get {
-            return headers.headers["connection"] ?? HeaderValues([])
+            return headers.headers["connection"] ?? Header([])
         }
 
         set(connection) {
