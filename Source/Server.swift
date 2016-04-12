@@ -34,8 +34,8 @@ public struct Server {
     public let serializer: S4.ResponseSerializer
     public let port: Int
 
-    public init(address: String? = nil, port: Int = 8080, reusePort: Bool = false, parser: S4.RequestParser = RequestParser(), middleware: Middleware..., responder: Responder, serializer: S4.ResponseSerializer = ResponseSerializer()) throws {
-        self.server = try TCPServer(for: URI(host: address ?? "0.0.0.0", port: port), reusingPort: reusePort)
+    public init(at host: String = "0.0.0.0", on port: Int = 8080, reusingPort reusePort: Bool = false, parser: S4.RequestParser = RequestParser(), middleware: Middleware..., responder: Responder, serializer: S4.ResponseSerializer = ResponseSerializer()) throws {
+        self.server = try TCPServer(at: host, on: port, reusingPort: reusePort)
         self.parser = parser
         self.middleware = middleware
         self.responder = responder
@@ -47,8 +47,8 @@ public struct Server {
         try self.init(responder: responder)
     }
 
-    public init(address: String? = nil, port: Int = 8080, reusePort: Bool = false, parser: S4.RequestParser = RequestParser(), middleware: Middleware..., serializer: S4.ResponseSerializer = ResponseSerializer(), _ respond: Respond) throws {
-        self.server = try TCPServer(for: URI(host: address ?? "0.0.0.0", port: port), reusingPort: reusePort)
+    public init(at host: String = "0.0.0.0", on port: Int = 8080, reusingPort reusePort: Bool = false, parser: S4.RequestParser = RequestParser(), middleware: Middleware..., serializer: S4.ResponseSerializer = ResponseSerializer(), _ respond: Respond) throws {
+        self.server = try TCPServer(at: host, on: port, reusingPort: reusePort)
         self.parser = parser
         self.middleware = middleware
         self.responder = BasicResponder(respond)
