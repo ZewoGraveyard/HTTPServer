@@ -91,6 +91,8 @@ extension Server {
             do {
                 let data = try stream.receive(upTo: bufferSize)
                 try processData(data, stream: stream)
+            } catch is SystemError {
+                break
             } catch {
                 let response = Response(status: .internalServerError)
                 try serializer.serialize(response, to: stream)
@@ -161,8 +163,7 @@ extension Request {
         if version.minor == 0 {
             return connection.values.contains({$0.lowercased().contains("keep-alive")})
         }
-
-        return connection.values.contains({!$0.lowercased().contains("close")})
+        return !connection.values.contains({$0.lowercased().contains("close")})
     }
 }
 
