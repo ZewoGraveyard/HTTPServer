@@ -149,9 +149,9 @@ extension Server {
 }
 
 extension Request {
-    var connection: Header {
+    var connection: String? {
         get {
-            return headers.headers["connection"] ?? Header([])
+            return headers.headers["connection"]
         }
 
         set(connection) {
@@ -161,9 +161,9 @@ extension Request {
 
     var isKeepAlive: Bool {
         if version.minor == 0 {
-            return connection.values.contains({$0.lowercased().contains("keep-alive")})
+            return connection == "keep-alive"
         }
-        return !connection.values.contains({$0.lowercased().contains("close")})
+        return connection != "close"
     }
 }
 
