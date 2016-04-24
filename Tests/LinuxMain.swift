@@ -4,7 +4,7 @@ import XCTest
 @testable import HTTPServerTestSuite
 
 XCTMain([
-    testCase(ExampleTests.allTests)
+    testCase(HTTPServerTests.allTests)
 ])
 
 #endif
