@@ -101,7 +101,7 @@ extension Server {
             let response = try middleware.chain(to: responder).respond(to: request)
             try serializer.serialize(response, to: stream)
 
-            if let upgrade = response.upgrade {
+            if let upgrade = response.didUpgrade {
                 try upgrade(request, stream)
                 try stream.close()
             }
@@ -163,17 +163,16 @@ extension Request {
 }
 
 extension Response {
-    typealias Upgrade = (Request, Stream) throws -> Void
+    typealias DidUpgrade = (Request, Stream) throws -> Void
 
     // Warning: The storage key has to be in sync with Zewo.HTTP's upgrade property.
-    var upgrade: Upgrade? {
+    var didUpgrade: DidUpgrade? {
         get {
-            return storage["response-connection-upgrade"] as? Upgrade
+            return storage["response-connection-upgrade"] as? DidUpgrade
         }
 
-        set(upgrade) {
-            storage["response-connection-upgrade"] = upgrade
+        set(didUpgrade) {
+            storage["response-connection-upgrade"] = didUpgrade
         }
     }
 }
-
