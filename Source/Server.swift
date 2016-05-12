@@ -67,7 +67,7 @@ extension Server {
     }
 
     // Own methods
-    public func start(_ failure: ErrorProtocol -> Void = Server.printError) throws {
+    public func start(_ failure: (ErrorProtocol) -> Void = Server.printError) throws {
         printHeader()
         while true {
             let stream = try server.accept(timingOut: .never)
@@ -112,7 +112,7 @@ extension Server {
         }
     }
 
-    public func startInBackground(_ failure: ErrorProtocol -> Void = Server.printError) {
+    public func startInBackground(_ failure: (ErrorProtocol) -> Void = Server.printError) {
         co {
             do {
                 try self.start()
