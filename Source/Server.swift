@@ -88,6 +88,8 @@ extension Server {
                 try processData(data, stream: stream)
             } catch is SystemError {
                 break
+            } catch is StreamError {
+                break
             } catch {
                 let response = Response(status: .internalServerError)
                 try serializer.serialize(response, to: stream)
