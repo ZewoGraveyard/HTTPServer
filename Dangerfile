@@ -1,34 +1,33 @@
-# Sometimes it's a README fix, or something like that - which isn't relevant for
-# including in a project's CHANGELOG for example
-
 has_source_changes = !modified_files.grep(/Sources/).empty?
 has_test_changes = !modified_files.grep(/Tests/).empty?
-declared_trivial = pr_title.include? "#trivial" || !has_source_changes
-octo_client = env.request_source.client
+trivial_changes = pr_title.include? "#trivial" || !has_source_changes
+github = env.request_source.client
+organization, repository = env.ci_source.repo_slug.split("/")
 
-# Make a note about contributors not in the organization
-unless octo_client.organization_member?('VeniceX', pr_author)
-  message "@#{pr_author} is not a contributor yet, would you like to join VeniceX?"
+unless github.organization_member?(organization, pr_author)
+    message "Hey @#{pr_author}, you're not a member of #{organization} yet. Would you like to join the #{organization} Github organization?\nYou can also join our [Slack](http://slack.zewo.io) and interact with a great community of developers. 😊"
+end
 
-#  if modified_files.include?("*.gemspec")
-#    warn "External contributor has edited the Gemspec"
-#  end
+if modified_files.include? "Package.swift"
+    warn "Package.swift was updated"
+end
+
+if pr_title.include? "[WIP]"
+    warn "PR is classed as Work in Progress"
+end
+
+if lines_of_code > 500
+    warn "Big PR"
+end
+
+if has_source_changes && !has_test_changes
+  warn "Tests were not updated"
 end
 
 if pr_body.length < 5
   fail "Please provide a summary in the Pull Request description"
 end
 
-# Make it more obvious that a PR is a work in progress and shouldn't be merged yet
-warn("PR is classed as Work in Progress") if pr_title.include? "[WIP]"
-
-# Warn when there is a big PR
-warn("Big PR") if lines_of_code > 500
-
-if has_source_changes && !has_test_changes
-  warn "Tests were not updated"
-end
-
-if !modified_files.include?("CHANGELOG.md") && !declared_trivial
-  fail("Please include a CHANGELOG entry. \nYou can find it at CHANGELOG.md")
+if !trivial_changes && !modified_files.include? "CHANGELOG.md"
+  fail "Please include a CHANGELOG entry. \nYou can find it at CHANGELOG.md"
 end
