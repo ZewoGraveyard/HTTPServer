@@ -28,6 +28,6 @@ if pr_body.length < 5
   fail "Please provide a summary in the Pull Request description"
 end
 
-if !trivial_changes && !modified_files.include? "CHANGELOG.md"
+if !trivial_changes && !modified_files.include?("CHANGELOG.md")
   fail "Please include a CHANGELOG entry. \nYou can find it at CHANGELOG.md"
 end
