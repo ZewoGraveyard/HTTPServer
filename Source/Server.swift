@@ -59,12 +59,17 @@ public struct Server {
     }
 }
 
-extension Server {
+extension Server: S4.Server {
+    public init(host: String, port: Int, responder: Responder) throws {
+        try self.init(host: host, port: port, responder: responder, serializer: ResponseSerializer())
+    }
 
-    // S4.Server conformance
     public func start() throws {
         try self.start(Server.printError)
     }
+}
+
+extension Server {
 
     // Own methods
     public func start(_ failure: (ErrorProtocol) -> Void = Server.printError) throws {
