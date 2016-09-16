@@ -1,10 +1,10 @@
-#if os(Linux)
-
 import XCTest
-@testable import HTTPServerTestSuite
+import HTTPServerTests
 
 XCTMain([
-    testCase(HTTPServerTests.allTests)
+    testCase(ResourceTests.allTests)
+    testCase(RouterTests.allTests)
+    testCase(RoutesTests.allTests)
+    testCase(TrieRouteMatcherTests.allTests)
+    testCase(ServerTests.allTests)
 ])
-
-#endif
